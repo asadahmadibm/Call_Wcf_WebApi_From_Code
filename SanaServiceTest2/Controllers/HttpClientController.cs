@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -13,11 +15,15 @@ namespace SanaServiceTest2.Controllers
     [ApiController]
     public class HttpClientController : ControllerBase
     {
-
+        private IMemoryCache _memoryCache;
+        public HttpClientController(IMemoryCache memoryCache)
+        {
+            _memoryCache = memoryCache;
+        }
 
         [HttpPost]
-        [Route("GetWebApiByHttpClient")]
-        public async Task<String> GetWebApiByHttpClient()
+        [Route("GetWebApiTokenByHttpClient")]
+        public async Task<String> GetWebApiTokenByHttpClient()
         {
 
             //var httpClient = new HttpClient();
@@ -45,6 +51,7 @@ namespace SanaServiceTest2.Controllers
             if (response.IsSuccessStatusCode)
             {
                 contents = await response.Content.ReadAsStringAsync();
+                
             }
             return contents;
 
@@ -58,8 +65,7 @@ namespace SanaServiceTest2.Controllers
             var client1 = new HttpClient();
             client1.BaseAddress = new Uri("https://swagger.tnlink.ir/");
             var request1 = new HttpRequestMessage(HttpMethod.Post, "/Group/GetById");
-
-            var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOlsiMSIsIjEiXSwidW5pcXVlX25hbWUiOiLYp9iz2LnYryDYp9it2YXYr9uMIiwiVXNlck5hbWUiOiLYp9iz2LnYryDYp9it2YXYr9uMIiwicGVybWlzc2lvbiI6IlN5c0FkbWluLEVjYXJTYWxlcyIsIlVzZXJUeXBlIjoiMSIsInByb3ZpbmNlcyI6IiIsIlJvbGVzIjoiU3lzQWRtaW4iLCJuYmYiOjE2OTE4MTU3NjAsImV4cCI6MTY5MTgxOTM2MCwiaWF0IjoxNjkxODE1NzYwLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo3MDEyIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo0MjAwIn0.GZa72vsSZuaCblDIw469gfYW2gyLTShsVQaLXsLvVak";
+            string token =await GetToken();
             client1.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             idDto crmRegionDto = new idDto() { id = 1 };
@@ -72,6 +78,22 @@ namespace SanaServiceTest2.Controllers
             }
             return contents1;
 
+        }
+
+        [HttpGet]
+        [Route("GetToken")]
+        public async Task<string> GetToken()
+        {
+            string token = "";
+            //var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOlsiMSIsIjEiXSwidW5pcXVlX25hbWUiOiLYp9iz2LnYryDYp9it2YXYr9uMIiwiVXNlck5hbWUiOiLYp9iz2LnYryDYp9it2YXYr9uMIiwicGVybWlzc2lvbiI6IlN5c0FkbWluLEVjYXJTYWxlcyIsIlVzZXJUeXBlIjoiMSIsInByb3ZpbmNlcyI6IiIsIlJvbGVzIjoiU3lzQWRtaW4iLCJuYmYiOjE2OTE4MTU3NjAsImV4cCI6MTY5MTgxOTM2MCwiaWF0IjoxNjkxODE1NzYwLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo3MDEyIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo0MjAwIn0.GZa72vsSZuaCblDIw469gfYW2gyLTShsVQaLXsLvVak";
+
+            if (!_memoryCache.TryGetValue("token", out token))
+            {
+                var contents =await GetWebApiTokenByHttpClient();
+                _memoryCache.Set("token", contents);
+
+            }
+            return token;
         }
         public class secur
         {
