@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Threading;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace SanaServiceTest2.Controllers
@@ -17,6 +18,8 @@ namespace SanaServiceTest2.Controllers
     public class HttpClientController : ControllerBase
     {
         private IMemoryCache _memoryCache;
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+
         public HttpClientController(IMemoryCache memoryCache)
         {
             _memoryCache = memoryCache;
@@ -87,15 +90,37 @@ namespace SanaServiceTest2.Controllers
         {
             string token = "";
             //var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOlsiMSIsIjEiXSwidW5pcXVlX25hbWUiOiLYp9iz2LnYryDYp9it2YXYr9uMIiwiVXNlck5hbWUiOiLYp9iz2LnYryDYp9it2YXYr9uMIiwicGVybWlzc2lvbiI6IlN5c0FkbWluLEVjYXJTYWxlcyIsIlVzZXJUeXBlIjoiMSIsInByb3ZpbmNlcyI6IiIsIlJvbGVzIjoiU3lzQWRtaW4iLCJuYmYiOjE2OTE4MTU3NjAsImV4cCI6MTY5MTgxOTM2MCwiaWF0IjoxNjkxODE1NzYwLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo3MDEyIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo0MjAwIn0.GZa72vsSZuaCblDIw469gfYW2gyLTShsVQaLXsLvVak";
+            bool isAvaiable = _memoryCache.TryGetValue("token", out token);
+            if (isAvaiable) return token;
 
-            if (!_memoryCache.TryGetValue("token", out token))
+            try
             {
-                var contents =await GetWebApiTokenByHttpClient();
+                await semaphore.WaitAsync();
+                isAvaiable = _memoryCache.TryGetValue("token", out token);
+                if (isAvaiable) return token;
+
+                var contents = await GetWebApiTokenByHttpClient();
                 dynamic data = JObject.Parse(contents);
                 token = data["token"];
-                _memoryCache.Set("token", token);
 
+                var cacheEntryOptions = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpiration = DateTime.Now.AddMinutes(5),
+                    SlidingExpiration = TimeSpan.FromMinutes(2),
+                    Size = 1024,
+                };
+                _memoryCache.Set("token", token, cacheEntryOptions);
             }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+
             return token;
         }
         public class secur
