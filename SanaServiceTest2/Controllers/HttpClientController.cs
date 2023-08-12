@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json.Nodes;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace SanaServiceTest2.Controllers
@@ -90,7 +91,9 @@ namespace SanaServiceTest2.Controllers
             if (!_memoryCache.TryGetValue("token", out token))
             {
                 var contents =await GetWebApiTokenByHttpClient();
-                _memoryCache.Set("token", contents);
+                dynamic data = JObject.Parse(contents);
+                token = data["token"];
+                _memoryCache.Set("token", token);
 
             }
             return token;
