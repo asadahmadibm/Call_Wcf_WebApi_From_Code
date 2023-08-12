@@ -13,9 +13,13 @@ namespace SanaServiceTest2.Controllers
     [ApiController]
     public class HttpClientController : ControllerBase
     {
-        [HttpPost(Name = "GetWebApiByHttpClient")]
+
+
+        [HttpPost]
+        [Route("GetWebApiByHttpClient")]
         public async Task<String> GetWebApiByHttpClient()
         {
+
             //var httpClient = new HttpClient();
             //var parameters = new Dictionary<string, string>();
             ////parameters["text"] = text;
@@ -47,12 +51,40 @@ namespace SanaServiceTest2.Controllers
 
         }
 
+        [HttpPost]
+        [Route("GetGroupByHttpClient")]
+        public async Task<String> GetGroupByHttpClient()
+        {
+            var client1 = new HttpClient();
+            client1.BaseAddress = new Uri("https://swagger.tnlink.ir/");
+            var request1 = new HttpRequestMessage(HttpMethod.Post, "/Group/GetById");
 
+            var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOlsiMSIsIjEiXSwidW5pcXVlX25hbWUiOiLYp9iz2LnYryDYp9it2YXYr9uMIiwiVXNlck5hbWUiOiLYp9iz2LnYryDYp9it2YXYr9uMIiwicGVybWlzc2lvbiI6IlN5c0FkbWluLEVjYXJTYWxlcyIsIlVzZXJUeXBlIjoiMSIsInByb3ZpbmNlcyI6IiIsIlJvbGVzIjoiU3lzQWRtaW4iLCJuYmYiOjE2OTE4MTU3NjAsImV4cCI6MTY5MTgxOTM2MCwiaWF0IjoxNjkxODE1NzYwLCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo3MDEyIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo0MjAwIn0.GZa72vsSZuaCblDIw469gfYW2gyLTShsVQaLXsLvVak";
+            client1.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            idDto crmRegionDto = new idDto() { id = 1 };
+            request1.Content = new StringContent(JsonConvert.SerializeObject(crmRegionDto), UnicodeEncoding.UTF8, "application/json");
+            var response1 = await client1.SendAsync(request1);
+            string contents1 = "";
+            if (response1.IsSuccessStatusCode)
+            {
+                contents1 = await response1.Content.ReadAsStringAsync();
+            }
+            return contents1;
+
+        }
         public class secur
         {
             public string username { get; set; }
             public string password { get; set; }
 
         }
+
+        public class idDto
+        {
+            public int  id { get; set; }
+
+        }
+
     }
 }
